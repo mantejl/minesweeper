@@ -1,3 +1,10 @@
 <resources>
-    <string name="app_name">Minesweeper</string>
+    <string name="app_name">CS 310&#160;&#160;&#160;&#160;&#160;&#160;
+        &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+        &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+        &#160;&#160;&#160;&#160;&#160;&#160;&#160;&#160;
+        Mantej Lamba</string>
+    <string name="flagIcon">\uD83D\uDEA9</string>
+    <string name="timer">"\u23F1"</string>
+    <string name="tool">\u26CF</string>
 </resources>
