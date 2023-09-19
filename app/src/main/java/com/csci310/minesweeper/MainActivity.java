@@ -3,6 +3,7 @@ package com.csci310.minesweeper;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.gridlayout.widget.GridLayout;
 
+import android.content.Intent;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
@@ -22,12 +23,12 @@ public class MainActivity extends AppCompatActivity {
     public boolean gameOver = false;
     public boolean start = false;
     public int flagCounter = 4;
-    public boolean placingFlags = false;
+    public boolean placingFlags = true;
     public int correctSquares = 0;
     public boolean userWon = false;
 
     // storing the cell that is clicked for later on
-    private ArrayList<TextView> cell_tvs;
+    private ArrayList<TextView> cell_tvs = new ArrayList<TextView>();
     private ArrayList<Integer> placedBombs = new ArrayList<Integer>();
 
     private int dpToPixel(int dp) {
@@ -40,9 +41,7 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        cell_tvs = new ArrayList<TextView>();
-
-        // Method (2): add 120 dynamically created cells
+        // add 120 dynamically created cells
         GridLayout grid = (GridLayout) findViewById(R.id.gridLayout01);
         for (int i = 0; i <= 11; i++) {
             for (int j = 0; j <= 9; j++) {
@@ -88,19 +87,18 @@ public class MainActivity extends AppCompatActivity {
         return -1;
     }
 
-    public void revealCells(int index) {
+    public void showAdjacentCells(int index) {
         ArrayList<Integer> adjacentCells = new ArrayList<Integer>();
         adjacentCells.add(index);
         addAdjacentMines(index, adjacentCells);
-        for (Integer cell : adjacentCells) {
-            if (cell >= 0 && cell < cell_tvs.size()) {
-                ColorDrawable c = (ColorDrawable) cell_tvs.get(cell).getBackground();
-                int colorOfCell = c.getColor();
-                if (colorOfCell != Color.LTGRAY && !cellHasMine(cell)) {
+        for (int i = 0; i < adjacentCells.size(); i++) {
+            if (adjacentCells.get(i) >= 0 && adjacentCells.get(i) < 120) {
+                ColorDrawable cell = (ColorDrawable) cell_tvs.get(adjacentCells.get(i)).getBackground();
+                if (!cellHasMine(adjacentCells.get(i)) && cell.getColor() != Color.LTGRAY) {
                     correctSquares++;
-                    cell_tvs.get(cell).setBackgroundColor(Color.LTGRAY);
-                    if (cell_tvs.get(cell).getText().toString().equals("")) {
-                        revealCells(cell);
+                    cell_tvs.get(adjacentCells.get(i)).setBackgroundColor(Color.LTGRAY);
+                    if (cell_tvs.get(adjacentCells.get(i)).getText().toString().equals("")) {
+                        showAdjacentCells(adjacentCells.get(i));
                     }
                 }
             }
@@ -148,14 +146,18 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void addAdjacentMines(int index, ArrayList<Integer> mines) {
-        mines.add(index + 10);
-        mines.add(index + 11);
-        mines.add(index + 9);
-        mines.add(index + 1);
-        mines.add(index - 1);
-        mines.add(index - 10);
-        mines.add(index - 11);
-        mines.add(index - 9);
+        int row = index / 10;
+        int col = index % 10;
+
+        // Check and add adjacent cells within the grid boundaries
+        for (int i = row - 1; i <= row + 1; i++) {
+            for (int j = col - 1; j <= col + 1; j++) {
+                if (i >= 0 && i < 12 && j >= 0 && j < 10) {
+                    int adjacentIndex = i * 10 + j;
+                    mines.add(adjacentIndex);
+                }
+            }
+        }
     }
 
     public boolean cellHasMine(int index) {
@@ -164,11 +166,34 @@ public class MainActivity extends AppCompatActivity {
 
 
     public void clickButton(View view){
-        // if the game is over, go to the result page
-
         start = true;
         TextView tv = (TextView) view;
-        if (placingFlags) {
+        if (!placingFlags) {
+            int n = findIndexOfCellTextView(tv);
+            if (cellHasMine(n)) {
+                tv.setText("\uD83D\uDCA3");
+                for (int i = 0; i < placedBombs.size(); i++) {
+                    cell_tvs.get(i).setBackgroundColor(Color.LTGRAY);
+                }
+                gameOver = true;
+                userWon = false;
+                result();
+            }
+            tv.setBackgroundColor(Color.LTGRAY);
+            correctSquares++;
+            if (tv.getText().toString().equals("")) {
+                showAdjacentCells(n);
+            }
+            if (correctSquares >= 116) {
+                for (Integer i: placedBombs) {
+                    cell_tvs.get(i).setBackgroundColor(Color.LTGRAY);
+                    cell_tvs.get(i).setText("\uD83D\uDCA3");
+                }
+                userWon = true;
+                gameOver = true;
+                result();
+            }
+        } else {
             if (tv.getText().toString().equals("\uD83D\uDEA9")) {
                 tv.setText("");
                 flagCounter++;
@@ -177,32 +202,8 @@ public class MainActivity extends AppCompatActivity {
             } else {
                 tv.setText("\uD83D\uDEA9");
                 flagCounter--;
-                final TextView timeView = (TextView) findViewById(R.id.flagCount);
+                TextView timeView = (TextView) findViewById(R.id.flagCount);
                 timeView.setText(String.valueOf(flagCounter));
-            }
-        } else {
-            int n = findIndexOfCellTextView(tv);
-            if (cellHasMine(n)) {
-                tv.setText("\uD83D\uDCA3");
-                for (int i = 0; i < placedBombs.size(); i++) {
-                    cell_tvs.get(i).setBackgroundColor(Color.LTGRAY);
-                    cell_tvs.get(i).setText("\uD83D\uDCA3");
-                }
-                gameOver = true;
-                userWon = false;
-            }
-            tv.setBackgroundColor(Color.LTGRAY);
-            correctSquares++;
-            if (tv.getText().toString().equals("")) {
-                revealCells(n);
-            }
-            if (correctSquares >= 116) {
-                for (int i = 0; i < placedBombs.size(); i++) {
-                    cell_tvs.get(i).setBackgroundColor(Color.LTGRAY);
-                    cell_tvs.get(i).setText("\uD83D\uDCA3");
-                }
-                userWon = true;
-                gameOver = true;
             }
         }
     }
@@ -212,12 +213,53 @@ public class MainActivity extends AppCompatActivity {
         if(placingFlags)
         {
             button.setText(R.string.tool);
+            int counter = showNumber(5);
             placingFlags = false;
         }
         else {
             button.setText(R.string.flagIcon);
+            int counter = showNumber(5);
             placingFlags = true;
         }
+    }
+
+    public int showNumber(int cells) {
+        return cells;
+    }
+
+    public void result() {
+        Intent ending = new Intent(this, ShowEnding.class);
+        boolean win = checkWinCondition();
+        ending.putExtra("timeTaken", String.valueOf(clockTimer));
+        if (userWon == true) {
+            ending.putExtra("winOrLose", "You won. \n Good job!");
+        } else {
+            ending.putExtra("winOrLose", "You lost. \n Better luck next time!");
+        }
+        startActivity(ending);
+    }
+
+    public boolean checkWinCondition() {
+        int totalCells = cell_tvs.size();
+        int totalRevealed = 0;
+        int totalBombs = placedBombs.size();
+
+        for (int i = 0; i < totalCells; i++) {
+            TextView cell = cell_tvs.get(i);
+
+            // Check if the cell is revealed and doesn't contain a bomb
+            if (cell.getBackground() instanceof ColorDrawable) {
+                ColorDrawable background = (ColorDrawable) cell.getBackground();
+                int backgroundColor = background.getColor();
+
+                if (backgroundColor == Color.LTGRAY && !cell.getText().toString().equals("\uD83D\uDCA3")) {
+                    totalRevealed++;
+                }
+            }
+        }
+
+        // Check if all non-mine cells are revealed
+        return totalRevealed == (totalCells - totalBombs);
     }
 
     private void runTimer() {
